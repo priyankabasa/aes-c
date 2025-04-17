@@ -180,9 +180,30 @@ void invert_shift_rows(unsigned char *block) {
     block[15] = temp;
   }
 
+  static unsigned char mul(unsigned char a, unsigned char b) {
+    unsigned char result = 0;
+    while (b) {
+      if (b & 1)
+        result ^= a;
+      a = xtime(a);
+      b >>= 1;
+    }
+    return result;
+  }
 
 void invert_mix_columns(unsigned char *block) {
-  // TODO: Implement me!
+  for (int i = 0; i < 4; i++) {
+    int idx = i * 4;
+    unsigned char a = block[idx];
+    unsigned char b = block[idx + 1];
+    unsigned char c = block[idx + 2];
+    unsigned char d = block[idx + 3];
+
+    block[idx]     = mul(a, 0x0e) ^ mul(b, 0x0b) ^ mul(c, 0x0d) ^ mul(d, 0x09);
+    block[idx + 1] = mul(a, 0x09) ^ mul(b, 0x0e) ^ mul(c, 0x0b) ^ mul(d, 0x0d);
+    block[idx + 2] = mul(a, 0x0d) ^ mul(b, 0x09) ^ mul(c, 0x0e) ^ mul(d, 0x0b);
+    block[idx + 3] = mul(a, 0x0b) ^ mul(b, 0x0d) ^ mul(c, 0x09) ^ mul(d, 0x0e);
+  }
 }
 
 /*
