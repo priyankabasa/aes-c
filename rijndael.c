@@ -80,9 +80,34 @@ void shift_rows(unsigned char *block) {
   block[3] = temp;
 }
 
-void mix_columns(unsigned char *block) {
-  // TODO: Implement me!
+// Helper function multiply by 2 in GF(2^8)
+static unsigned char xtime(unsigned char x) {
+  return (x << 1) ^ ((x >> 7) * 0x1b);
 }
+
+void mix_columns(unsigned char *block) {
+  for (int i = 0; i < 4; i++) {
+    int idx = i * 4;
+    unsigned char a = block[idx];
+    unsigned char b = block[idx + 1];
+    unsigned char c = block[idx + 2];
+    unsigned char d = block[idx + 3];
+
+    unsigned char abcd = a ^ b ^ c ^ d;
+
+    unsigned char temp_a = a;
+    a ^= abcd ^ xtime(a ^ b);
+    b ^= abcd ^ xtime(b ^ c);
+    c ^= abcd ^ xtime(c ^ d);
+    d ^= abcd ^ xtime(d ^ temp_a);
+
+    block[idx] = a;
+    block[idx + 1] = b;
+    block[idx + 2] = c;
+    block[idx + 3] = d;
+  }
+}
+
 
 /*
  * Operations used when decrypting a block
