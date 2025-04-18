@@ -222,8 +222,9 @@ void add_round_key(unsigned char *block, unsigned char *round_key) {
  * vector, containing the 11 round keys one after the other
  */
 unsigned char *expand_key(unsigned char *cipher_key) {
-  static unsigned char round_keys[176];  // Static so it persists after return
-
+  unsigned char *round_keys = (unsigned char *)malloc(176 * sizeof(unsigned char));
+  if (!round_keys) return NULL;
+  
   unsigned char temp[4];
   int i = 0;
   while (i < 16) {
@@ -260,6 +261,7 @@ unsigned char *expand_key(unsigned char *cipher_key) {
   return round_keys;
 }
 
+
 /*
  * The implementations of the functions declared in the
  * header file should go here
@@ -269,7 +271,7 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
   if (!output) return NULL;
 
   unsigned char state[4][4];
-  unsigned char round_keys[176]; // 11 round keys * 16 bytes each
+  unsigned char *round_keys; // 11 round keys * 16 bytes each
 
   // Load plaintext into state matrix (column-major)
   for (int i = 0; i < BLOCK_SIZE; i++) {
@@ -277,23 +279,24 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
   }
 
   // Key expansion
-  KeyExpansion(key, round_keys);
+  round_keys = expand_key(key);
+
 
   // Initial round key addition
-  AddRoundKey(state, round_keys);
+  add_round_key(state, round_keys);
 
   // 9 main rounds
   for (int round = 1; round < 10; round++) {
-      SubBytes(state);
-      ShiftRows(state);
-      MixColumns(state);
-      AddRoundKey(state, round_keys + round * BLOCK_SIZE);
+      sub_bytes(state);
+      shift_rows(state);
+      mix_columns(state);
+      add_round_key(state, round_keys + round * BLOCK_SIZE);
   }
 
   // Final round (no MixColumns)
-  SubBytes(state);
-  ShiftRows(state);
-  AddRoundKey(state, round_keys + 10 * BLOCK_SIZE);
+  sub_bytes(state);
+  shift_rows(state);
+  add_round_key(state, round_keys + 10 * BLOCK_SIZE);
 
   // Copy state matrix to output buffer
   for (int i = 0; i < BLOCK_SIZE; i++) {
