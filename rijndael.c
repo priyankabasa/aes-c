@@ -10,6 +10,7 @@
 /*
  * Operations used when encrypting a block
  */
+#define BLOCK_SIZE 16
 
 // S-box used in AES for SubBytes
 static const unsigned char sbox[256] = {
@@ -221,8 +222,42 @@ void add_round_key(unsigned char *block, unsigned char *round_key) {
  * vector, containing the 11 round keys one after the other
  */
 unsigned char *expand_key(unsigned char *cipher_key) {
-  // TODO: Implement me!
-  return 0;
+  static unsigned char round_keys[176];  // Static so it persists after return
+
+  unsigned char temp[4];
+  int i = 0;
+  while (i < 16) {
+    round_keys[i] = cipher_key[i];
+    i++;
+  }
+
+  const unsigned char rcon[11] = {
+    0x00, 0x01, 0x02, 0x04, 0x08,
+    0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
+  };
+
+  int bytes_generated = 16;
+  int rcon_iter = 1;
+
+  while (bytes_generated < 176) {
+    for (int j = 0; j < 4; j++)
+      temp[j] = round_keys[bytes_generated - 4 + j];
+
+    if (bytes_generated % 16 == 0) {
+      unsigned char t = temp[0];
+      temp[0] = sbox[temp[1]] ^ rcon[rcon_iter++];
+      temp[1] = sbox[temp[2]];
+      temp[2] = sbox[temp[3]];
+      temp[3] = sbox[t];
+    }
+
+    for (int j = 0; j < 4; j++) {
+      round_keys[bytes_generated] = round_keys[bytes_generated - 16] ^ temp[j];
+      bytes_generated++;
+    }
+  }
+
+  return round_keys;
 }
 
 /*
@@ -230,10 +265,43 @@ unsigned char *expand_key(unsigned char *cipher_key) {
  * header file should go here
  */
 unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
-  // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
+  unsigned char *output = (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
+  if (!output) return NULL;
+
+  unsigned char state[4][4];
+  unsigned char round_keys[176]; // 11 round keys * 16 bytes each
+
+  // Load plaintext into state matrix (column-major)
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+      state[i % 4][i / 4] = plaintext[i];
+  }
+
+  // Key expansion
+  KeyExpansion(key, round_keys);
+
+  // Initial round key addition
+  AddRoundKey(state, round_keys);
+
+  // 9 main rounds
+  for (int round = 1; round < 10; round++) {
+      SubBytes(state);
+      ShiftRows(state);
+      MixColumns(state);
+      AddRoundKey(state, round_keys + round * BLOCK_SIZE);
+  }
+
+  // Final round (no MixColumns)
+  SubBytes(state);
+  ShiftRows(state);
+  AddRoundKey(state, round_keys + 10 * BLOCK_SIZE);
+
+  // Copy state matrix to output buffer
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+      output[i] = state[i % 4][i / 4];
+  }
+
   return output;
+
 }
 
 unsigned char *aes_decrypt_block(unsigned char *ciphertext,
