@@ -302,15 +302,48 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
   for (int i = 0; i < BLOCK_SIZE; i++) {
       output[i] = state[i % 4][i / 4];
   }
+  free(round_keys);
 
   return output;
 
 }
 
-unsigned char *aes_decrypt_block(unsigned char *ciphertext,
-                                 unsigned char *key) {
-  // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
+unsigned char *aes_decrypt_block(unsigned char *ciphertext, unsigned char *key) {
+  unsigned char *output = (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
+  if (!output) return NULL;
+
+  unsigned char state[4][4];
+  unsigned char *round_keys;
+
+  // Load ciphertext into state matrix (column-major)
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+    state[i % 4][i / 4] = ciphertext[i];
+  }
+
+  // Key expansion
+  round_keys = expand_key(key);
+
+  // Initial round key addition (same as encryption but used the last round key)
+  add_round_key(state, round_keys + 10 * BLOCK_SIZE);
+
+ 
+  for (int round = 9; round > 0; round--) {
+    invert_shift_rows(state);
+    invert_sub_bytes(state);
+    add_round_key(state, round_keys + round * BLOCK_SIZE);
+    invert_mix_columns(state);
+  }
+
+  
+  invert_shift_rows(state);
+  invert_sub_bytes(state);
+  add_round_key(state, round_keys);
+
+  // Copy state matrix to output buffer
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+    output[i] = state[i % 4][i / 4];
+  }
+  free(round_keys);
+
   return output;
 }
