@@ -1,3 +1,27 @@
+"""
+AES-128 Implementation Test Script
+
+Name: Sai Priyanka Basa Shanker
+Student Number: D24125575
+
+Description:
+Tests the AES-128 implementation from the compiled C library (rijndael.so) using ctypes.
+
+Features:
+- Loads and interfaces with the C AES library using ctypes
+- Includes multiple test cases:
+    * Sequential numbers (1-16)
+    * All zeros edge case
+    * All 255s (max byte value) 
+    * Various patterned inputs
+- For each test case:
+    1. Encrypts plaintext using aes_encrypt_block()
+    2. Decrypts ciphertext using aes_decrypt_block() 
+    3. Prints original, encrypted and decrypted data in hex format
+
+Verifies correct AES operation by checking if decrypted output matches original input.
+"""
+
 import ctypes
 
 # Load compiled shared library

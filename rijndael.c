@@ -1,19 +1,55 @@
 /*
- * TODO: Add your name and student number here, along with
- *       a brief description of this code.
+ * Name: Sai Priyanka Basa Shanker  
+ * Student Number: D24125575 
+ *  
+ * Description:  
+ * This code implements the Advanced Encryption Standard (AES), specifically the Rijndael  
+ * algorithm, for 128-bit block encryption and decryption. AES is a symmetric-key algorithm,  
+ * meaning the same key is used for both encryption and decryption. This implementation  
+ * supports a 128-bit (16-byte) key and operates on 128-bit (16-byte) blocks of data.  
+ *  
+ * The code consists of the following 
+ *  
+ * 1. Substitution Boxes (S-Boxes):  
+ *    - s_box[256]: Precomputed lookup table for byte substitution during encryption.  
+ *    - inv_s_box[256]: Inverse substitution box for decryption.  
+ *    These provide non-linearity to the cipher, making it resistant to cryptanalysis.  
+ *  
+ * 2. Key Expansion:  
+ *    - expand_key(): Generates 11 round keys (176 bytes) from the original 128-bit cipher key.  
+ *    - Uses Rijndael's key schedule algorithm with XOR operations and S-box substitutions.  
+ *    - Includes round constants (rcon) to eliminate symmetries in the key expansion.  
+ *  
+ * 3. Encryption Functions:  
+ *    - sub_bytes(): Replaces each byte in the state using the S-box.  
+ *    - shift_rows(): Cyclically shifts rows of the state matrix.  
+ *    - mix_columns(): Mixes columns using finite field multiplication for diffusion.  
+ *    - add_round_key(): XORs the state with the round key.  
+ *    - aes_encrypt_block(): Executes 10 rounds of AES encryption (initial round,  
+ *      8 main rounds with all operations, and a final round without mix_columns).  
+ *  
+ * 4. Decryption Functions:  
+ *    - invert_sub_bytes(): Uses the inverse S-box to reverse byte substitution.  
+ *    - invert_shift_rows(): Reverses the row shifting operation.  
+ *    - invert_mix_columns(): Reverses the column mixing using inverse coefficients.  
+ *    - aes_decrypt_block(): Executes inverse operations in reverse order for decryption.  
+ *  
+ * 5. Helper Functions:  
+ *    - gmul(): Performs finite field (Galois Field) multiplication used in mix_columns.  
+ *    - BLOCK_ACCESS macro: Provides convenient access to the state matrix elements.  
+ *  
+ * The encryption/decryption follows the standard AES structure:  
+ *   - Encryption: AddRoundKey → (SubBytes → ShiftRows → MixColumns → AddRoundKey)*9 →  
+ *                (SubBytes → ShiftRows → AddRoundKey)  
+ *   - Decryption: AddRoundKey → InvShiftRows → InvSubBytes → (AddRoundKey →  
+ *                InvMixColumns → InvShiftRows → InvSubBytes)*9 → AddRoundKey  
  */
 
  #include <stdlib.h>
- // TODO: Any other files you need to include should go here
- #include <string.h>   // For memcpy, memset
+ #include <string.h>   
  #include <stdio.h>
- 
  #include "rijndael.h"
  
- /*
-  * Operations used when encrypting a block
-  */
-  
    static const unsigned char s_box[256] = {
      0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
      0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -24,7 +60,7 @@
      0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a,
      0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
      0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0,
-     0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
+     0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,  
      0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b,
      0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
      0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85,
@@ -98,14 +134,12 @@
  }
  
  void sub_bytes(unsigned char *block) {
-   // TODO: Implement me!
    for (int i = 0; i < BLOCK_SIZE; i++) {
      block[i] = s_box[block[i]];
    }
  }
  
  void shift_rows(unsigned char *block) {
-   // TODO: Implement me!
    unsigned char temp;
  
    // Row 1 shift left by 1
@@ -132,7 +166,6 @@
  }
  
  void mix_columns(unsigned char *block) {
-   // TODO: Implement me!
    for (int c = 0; c < 4; ++c) {
      unsigned char *col = &block[c * 4];
      unsigned char a0 = col[0], a1 = col[1], a2 = col[2], a3 = col[3];
@@ -143,18 +176,14 @@
    }
  }
  
- /*
-  * Operations used when decrypting a block
-  */
+ 
  void invert_sub_bytes(unsigned char *block) {
-   // TODO: Implement me!
    for (int i = 0; i < BLOCK_SIZE; i++) {
      block[i] = inv_s_box[block[i]];
  }
  }
  
  void invert_shift_rows(unsigned char *block) {
-   // TODO: Implement me!
    unsigned char temp;
  
    // Row 1 shift right by 1
@@ -181,7 +210,6 @@
  }
  
  void invert_mix_columns(unsigned char *block) {
-   // TODO: Implement me!
    for (int c = 0; c < 4; ++c) {
      unsigned char *col = &block[c * 4];
      unsigned char a0 = col[0], a1 = col[1], a2 = col[2], a3 = col[3];
@@ -192,21 +220,14 @@
    }
  }
  
- /*
-  * This operation is shared between encryption and decryption
-  */
+ 
  void add_round_key(unsigned char *block, unsigned char *round_key) {
-   // TODO: Implement me!
    for (int i = 0; i < BLOCK_SIZE; i++) {
      block[i] ^= round_key[i];
    }
  }
  
- /*
-  * This function should expand the round key. Given an input,
-  * which is a single 128-bit key, it should return a 176-byte
-  * vector, containing the 11 round keys one after the other
-  */
+ 
   // Key expansion
  static const unsigned char rcon[11] = {
    0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
@@ -214,7 +235,6 @@
  };
  
  unsigned char *expand_key(unsigned char *cipher_key) {
-   // TODO: Implement me!
    int Nb = 4, Nk = 4, Nr = 10;
    unsigned char *round_keys = malloc(176); // 11 round keys * 16 bytes
  
@@ -247,10 +267,7 @@
    // return 0;
  }
  
- /*
-  * The implementations of the functions declared in the
-  * header file should go here
-  */
+
  // Encrypt and decrypt one block
  unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
    unsigned char *state = malloc(BLOCK_SIZE);
